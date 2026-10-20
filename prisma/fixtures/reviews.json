@@ -1,0 +1,111 @@
+{
+  "Bright Smile Dental — Downtown": [
+    {
+      "externalId": "gbp-dt-001",
+      "authorName": "Priya Nathan",
+      "rating": 5,
+      "text": "Dr. Okafor and the whole team were amazing. The office is spotless and the hygienist was so gentle with my cleaning. Booking online was easy too.",
+      "reviewedAt": "2026-06-02T14:20:00.000Z"
+    },
+    {
+      "externalId": "gbp-dt-002",
+      "authorName": "Marcus T.",
+      "rating": 2,
+      "text": "Waited 55 minutes past my appointment time for a routine checkup. This is the third time this has happened at this location. Please fix your scheduling.",
+      "reviewedAt": "2026-06-05T17:05:00.000Z"
+    },
+    {
+      "externalId": "gbp-dt-003",
+      "authorName": "Alicia Ferreira",
+      "rating": 1,
+      "text": "I was billed twice for the same cleaning and it took three phone calls to get a refund. The front desk kept transferring me. Very frustrating billing process.",
+      "reviewedAt": "2026-06-08T09:40:00.000Z"
+    },
+    {
+      "externalId": "gbp-dt-004",
+      "authorName": "J. Huang",
+      "rating": 1,
+      "text": "Unbelievable. The receptionist read my treatment plan and payment amount out loud in a full waiting room, including details about my root canal. I am considering contacting my lawyer about this.",
+      "reviewedAt": "2026-06-10T11:15:00.000Z"
+    },
+    {
+      "externalId": "gbp-dt-005",
+      "authorName": "Best Ever123",
+      "rating": 5,
+      "text": "Great place good service five stars recommend to everyone very good.",
+      "reviewedAt": "2026-06-11T08:00:00.000Z"
+    },
+    {
+      "externalId": "gbp-dt-006",
+      "authorName": "Devon Clarke",
+      "rating": 4,
+      "text": "Good experience overall, friendly staff, but parking around the building is a nightmare during lunch hours.",
+      "reviewedAt": "2026-06-13T13:00:00.000Z"
+    },
+    {
+      "externalId": "gbp-dt-007",
+      "authorName": "Sarah Kim",
+      "rating": 2,
+      "text": "Front desk staff was short with me and seemed annoyed when I asked about my invoice. The dentist himself was fine, it's the reception experience that needs work.",
+      "reviewedAt": "2026-06-15T16:30:00.000Z"
+    }
+  ],
+  "Bright Smile Dental — Scarborough": [
+    {
+      "externalId": "gbp-sc-001",
+      "authorName": "Tomas Weber",
+      "rating": 1,
+      "text": "Sat in the waiting room for over an hour past my appointment. Staff didn't even acknowledge the delay. This clinic clearly overbooks every slot.",
+      "reviewedAt": "2026-06-03T10:00:00.000Z"
+    },
+    {
+      "externalId": "gbp-sc-002",
+      "authorName": "Grace Anand",
+      "rating": 5,
+      "text": "Very clean office, and the hygienist explained everything she was doing. Would recommend to anyone in the Scarborough area.",
+      "reviewedAt": "2026-06-04T15:45:00.000Z"
+    },
+    {
+      "externalId": "gbp-sc-003",
+      "authorName": "Old Account 22",
+      "rating": 5,
+      "text": "Amazing amazing amazing best dentist ever visit now.",
+      "reviewedAt": "2026-06-06T07:30:00.000Z"
+    },
+    {
+      "externalId": "gbp-sc-004",
+      "authorName": "Roberta Singh",
+      "rating": 2,
+      "text": "Another long wait here at the Scarborough office, almost 40 minutes. Seems to be a pattern for this clinic based on other reviews I've read.",
+      "reviewedAt": "2026-06-09T12:10:00.000Z"
+    },
+    {
+      "externalId": "gbp-sc-005",
+      "authorName": "Wei Chen",
+      "rating": 3,
+      "text": "Dental work was fine but the billing statement was confusing and didn't match what I was quoted at check-in.",
+      "reviewedAt": "2026-06-12T09:20:00.000Z"
+    },
+    {
+      "externalId": "gbp-sc-006",
+      "authorName": "Fatima Noor",
+      "rating": 5,
+      "text": "The kids' section in the waiting room is a nice touch and the staff are always so friendly with my children.",
+      "reviewedAt": "2026-06-14T14:00:00.000Z"
+    },
+    {
+      "externalId": "gbp-sc-007",
+      "authorName": "Anonymous Patient",
+      "rating": 1,
+      "text": "I specifically told them not to discuss my diagnosis in front of my partner and they went ahead and did it anyway at checkout. I am not comfortable coming back and I am reporting this to my insurance provider.",
+      "reviewedAt": "2026-06-16T10:50:00.000Z"
+    },
+    {
+      "externalId": "gbp-sc-008",
+      "authorName": "Ben Okoye",
+      "rating": 4,
+      "text": "Solid visit, quick cleaning, only downside was limited parking spots out front.",
+      "reviewedAt": "2026-06-17T11:30:00.000Z"
+    }
+  ]
+}

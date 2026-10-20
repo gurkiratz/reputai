@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  AGENT
+  MANAGER
+}
+
+enum ReviewStatus {
+  NEW
+  DRAFTED
+  AWAITING_APPROVAL
+  APPROVED
+  POSTED
+}
+
+enum Sentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+enum EscalationLevel {
+  NORMAL
+  MANAGER
+  LEGAL
+  POSSIBLE_FAKE
+  PRIVACY_RISK
+}
+
+enum ComplianceSeverity {
+  BLOCK
+  WARN
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  locations         Location[]
+  users             User[]
+  brandVoiceProfile BrandVoiceProfile?
+  replyTemplates    ReplyTemplate[]
+  googleConnection  GoogleConnection?
+}
+
+// One Google Business Profile connection per organization (Phase I: real GBP sync).
+// Tokens are encrypted with AES-256-GCM (TOKEN_ENCRYPTION_KEY) before they are stored.
+model GoogleConnection {
+  id                    String    @id @default(cuid())
+  organizationId        String    @unique
+  googleAccountEmail    String?
+  accountName           String? // GBP resource name, e.g. "accounts/123"
+  encryptedAccessToken  String
+  encryptedRefreshToken String
+  accessTokenExpiresAt  DateTime
+  lastSyncAt            DateTime?
+  lastSyncError         String?
+  connectedById         String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model Location {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  address        String?
+  googlePlaceId  String? // kept from CPAN 314 (mock provider)
+  googleLocationName String? // GBP resource name, e.g. "accounts/123/locations/456"
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reviews      Review[]
+
+  @@index([organizationId])
+}
+
+model User {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  email          String   @unique
+  passwordHash   String
+  role           Role     @default(AGENT)
+  createdAt      DateTime @default(now())
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  draftedReplies  Reply[]      @relation("DraftedBy")
+  approvedReplies Reply[]      @relation("ApprovedBy")
+
+  @@index([organizationId])
+}
+
+model BrandVoiceProfile {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+  tone           String // e.g. "warm, professional, concise"
+  talkingPoints  String[] // things to include when relevant
+  topicsToAvoid  String[] // things replies must never mention
+  signOff        String? // e.g. "The Bright Smile Dental Team"
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model ReplyTemplate {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String
+  body           String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model Review {
+  id               String          @id @default(cuid())
+  locationId       String
+  externalId       String // id from the (mock) Google Business Profile provider
+  authorName       String
+  rating           Int // 1-5 stars
+  text             String
+  reviewedAt       DateTime // when the review was posted on Google
+  syncedAt         DateTime        @default(now())
+  status           ReviewStatus    @default(NEW)
+  sentiment        Sentiment?
+  topics           String[]        @default([])
+  escalationLevel  EscalationLevel @default(NORMAL)
+  escalationReason String?
+  priorityScore    Int             @default(0) // higher = more urgent
+  slaDueAt         DateTime? // when a reply is due by
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  replies  Reply[]
+
+  @@unique([locationId, externalId])
+  @@index([locationId])
+  @@index([status])
+}
+
+model Reply {
+  id           String    @id @default(cuid())
+  reviewId     String
+  body         String
+  isDraft      Boolean   @default(true)
+  draftedById  String?
+  approvedById String?
+  approvedAt   DateTime?
+  postedAt     DateTime?
+  internalNote String? // AI-suggested staff-facing follow-up note
+  revisionCount Int     @default(0) // revise-loop passes used by the LangGraph pipeline (max 2)
+  createdAt    DateTime  @default(now())
+
+  review     Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  draftedBy  User?  @relation("DraftedBy", fields: [draftedById], references: [id])
+  approvedBy User?  @relation("ApprovedBy", fields: [approvedById], references: [id])
+
+  complianceFlags ComplianceFlag[]
+
+  @@index([reviewId])
+}
+
+model ComplianceFlag {
+  id        String             @id @default(cuid())
+  replyId   String
+  severity  ComplianceSeverity
+  rule      String // short machine key, e.g. "patient_health_detail"
+  message   String
+  createdAt DateTime           @default(now())
+
+  reply Reply @relation(fields: [replyId], references: [id], onDelete: Cascade)
+
+  @@index([replyId])
+}

@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: reviewops
+      POSTGRES_PASSWORD: reviewops
+      POSTGRES_DB: reviewops
+    ports:
+      - "5433:5432"
+    volumes:
+      - reviewops_pgdata:/var/lib/postgresql/data
+
+volumes:
+  reviewops_pgdata:
