@@ -27,12 +27,6 @@ Phase I continues from the CPAN 314 prototype. It adds real Google Business Prof
 4. Sign in as the manager. Approve the reply. The app posts it to Google (or to the mock provider).
 5. Open **Reports** to see response time and sentiment for each location.
 
-## Tests
-
-```bash
-npm test
-```
-
 ## Setup
 
 Prerequisites: Node.js 20+, Docker and a GitHub Models token. See [SETUP.md](./SETUP.md) for full details.
@@ -70,6 +64,29 @@ Demo logins (after seeding): `agent@brightsmile.example` and `manager@brightsmil
 
 **Demo fallback:** if Google is not available (quota, expired token or no access), set `REVIEW_PROVIDER="mock"` and restart. The app then uses the sample dental reviews in `prisma/fixtures/reviews.json`.
 
+## Get the Demo Ready
+
+1. Start the database and the app:
+
+   ```bash
+   docker compose up -d
+   npm run db:migrate
+   npm run db:seed
+   npm run dev
+   ```
+
+2. Check that the AI works: `npx tsx --env-file=.env scripts/smoke-ai.ts`. It must print a reply. If it fails, check `GITHUB_MODELS_TOKEN` in `.env`.
+3. Run `npm test`. All 17 tests must pass.
+4. Open http://localhost:3000. Sign in as the agent and click **Sync** in the Inbox. Wait until the reviews have a sentiment.
+5. Demo steps:
+   - Open a review and click **Generate AI draft**. Show the compliance flags.
+   - Edit the reply to include "we guarantee this will never happen again". Click **Save changes**. A WARN flag appears. Click **Submit for approval**.
+   - Sign in as the manager. Pick a reason and click **Approve & post**. The override is saved in `ComplianceOverride`.
+   - Edit a reply to include "your root canal". It gets a BLOCK flag and cannot be submitted.
+   - Open **Reports** and show **Repeated complaints**. A group needs 2 or more negative reviews with the same topic at the same location.
+
+To reset the demo data, run `npm run db:seed` again after `npx prisma migrate reset`.
+
 ## Tech Stack
 
 - **Framework:** Next.js 16 (App Router, Server Components, Server Actions), React 19, TypeScript
@@ -102,6 +119,12 @@ scripts/                    Smoke scripts for the AI calls and the full flow
 - **Reply.revisionCount** (new): the number of revise-loop passes for an AI draft.
 
 ## Testing
+
+Unit and integration tests (Vitest) are in `tests/`. GitHub Actions runs them on every push.
+
+```bash
+npm test
+```
 
 Smoke scripts from CPAN 314 check the AI calls and the full flow against the local database:
 
