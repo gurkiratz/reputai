@@ -3,6 +3,7 @@ import { getReviewProvider } from "@/lib/reviews/provider";
 import { type BrandVoice, type ReviewAnalysis } from "@/lib/ai";
 import { type ComplianceFinding } from "@/lib/compliance";
 import { checkCompliance, runReplyPipeline } from "@/lib/pipeline/graph";
+import { validateOverride, type OverrideInput } from "@/lib/override";
 
 async function requireBrandVoice(organizationId: string): Promise<BrandVoice> {
   const profile = await prisma.brandVoiceProfile.findUnique({
@@ -156,7 +157,7 @@ export async function sendBackToDraft(reviewId: string) {
   await prisma.review.update({ where: { id: reviewId }, data: { status: "DRAFTED" } });
 }
 
-export async function approveAndPost(reviewId: string, managerId: string) {
+export async function approveAndPost(reviewId: string, managerId: string, override?: OverrideInput) {
   const review = await prisma.review.findUniqueOrThrow({
     where: { id: reviewId },
     include: { location: true },
@@ -167,10 +168,7 @@ export async function approveAndPost(reviewId: string, managerId: string) {
     include: { complianceFlags: true },
   });
   if (!reply) throw new Error("No draft reply to approve.");
-  const hasBlock = reply.complianceFlags.some((f) => f.severity === "BLOCK");
-  if (hasBlock) {
-    throw new Error("This reply is blocked by the compliance checker and cannot be approved.");
-  }
+  const validOverride = validateOverride(reply.complianceFlags, override);
 
   const provider = getReviewProvider();
   const posted = await provider.postReply({
@@ -189,6 +187,17 @@ export async function approveAndPost(reviewId: string, managerId: string) {
       isDraft: false,
     },
   });
+  if (validOverride) {
+    await prisma.complianceOverride.create({
+      data: {
+        replyId: reply.id,
+        managerId,
+        reason: validOverride.reason,
+        note: validOverride.note,
+        rules: reply.complianceFlags.map((f) => f.rule),
+      },
+    });
+  }
   await prisma.review.update({ where: { id: reviewId }, data: { status: "POSTED" } });
 
   return updated;

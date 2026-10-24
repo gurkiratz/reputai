@@ -13,6 +13,7 @@ import { Button } from "@astryxdesign/core/Button";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Icon } from "@astryxdesign/core/Icon";
 import { dateTimeLabel } from "@/lib/format";
+import { OVERRIDE_REASONS } from "@/lib/override";
 import {
   generateDraftAction,
   applyTemplateAction,
@@ -48,6 +49,8 @@ export function DraftPanel({
   const [error, setError] = useState<string | null>(null);
   const [body, setBody] = useState(latestReply?.body ?? "");
   const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [reason, setReason] = useState("");
+  const [note, setNote] = useState("");
 
   // `latestReply` is a server-provided prop that changes after router.refresh()
   // (e.g. right after generating a draft or applying a template) — resync the
@@ -194,12 +197,28 @@ export function DraftPanel({
 
               {isAwaitingApproval && userRole === "MANAGER" && (
                 <>
+                  {warnFlags.length > 0 && blockFlags.length === 0 && (
+                    <>
+                      <Selector
+                        label="Reason"
+                        isLabelHidden
+                        placeholder="Reason to approve with warnings..."
+                        options={OVERRIDE_REASONS.map((r) => ({ value: r, label: r }))}
+                        value={reason}
+                        onChange={(v) => setReason(v)}
+                        size="sm"
+                      />
+                      <TextArea label="Note" isLabelHidden value={note} onChange={setNote} rows={1} />
+                    </>
+                  )}
                   <Button
                     label="Approve & post to Google"
                     variant="primary"
                     size="sm"
-                    isDisabled={blockFlags.length > 0}
-                    clickAction={() => run(() => approveAndPostAction(reviewId))}
+                    isDisabled={blockFlags.length > 0 || (warnFlags.length > 0 && !reason)}
+                    clickAction={() =>
+                      run(() => approveAndPostAction(reviewId, warnFlags.length > 0 ? { reason, note } : undefined))
+                    }
                   />
                   <Button
                     label="Send back to draft"

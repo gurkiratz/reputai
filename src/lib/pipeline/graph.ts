@@ -13,7 +13,7 @@ import { runComplianceRules, type ComplianceFinding } from "@/lib/compliance";
 /**
  * The ReputAI reply pipeline (Phase I):
  *
- *   START → classify → draft → compliance ─┬─ pass ───────────→ END
+ *   START → classify → writeDraft → compliance ─┬─ pass ───────────→ END
  *                                          ├─ fail, < 2 revs → revise → compliance
  *                                          └─ fail, 2 revs ──→ blockMaxRevisions → END
  *
@@ -97,13 +97,13 @@ function afterCompliance(state: State) {
 
 const replyGraph = new StateGraph(PipelineState)
   .addNode("classify", classify)
-  .addNode("draft", draft)
+  .addNode("writeDraft", draft)
   .addNode("compliance", compliance)
   .addNode("revise", revise)
   .addNode("blockMaxRevisions", blockMaxRevisions)
   .addEdge(START, "classify")
-  .addEdge("classify", "draft")
-  .addEdge("draft", "compliance")
+  .addEdge("classify", "writeDraft")
+  .addEdge("writeDraft", "compliance")
   .addConditionalEdges("compliance", afterCompliance, {
     pass: END,
     revise: "revise",

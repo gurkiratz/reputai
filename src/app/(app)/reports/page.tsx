@@ -1,3 +1,4 @@
+import { groupComplaints } from "@/lib/complaints";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { VStack } from "@astryxdesign/core/VStack";
@@ -119,6 +120,10 @@ export default async function ReportsPage() {
     };
   });
 
+  const complaintGroups = groupComplaints(
+    reviews.map((r) => ({ locationName: r.location.name, sentiment: r.sentiment, topics: r.topics })),
+  );
+
   const maxSentiment = Math.max(...Object.values(sentimentCounts), 1);
 
   return (
@@ -171,6 +176,25 @@ export default async function ReportsPage() {
             <VStack gap={2} hAlign="stretch">
               {topTopics.map(([topic, count]) => (
                 <BarRow key={topic} label={topic.replaceAll("_", " ")} count={count} max={maxTopicCount} />
+              ))}
+            </VStack>
+          )}
+        </VStack>
+      </Card>
+
+      <Card>
+        <VStack gap={4} hAlign="stretch">
+          <Text type="body" weight="semibold" size="sm">
+            Repeated complaints
+          </Text>
+          {complaintGroups.length === 0 ? (
+            <Text type="supporting" size="sm">
+              No repeated complaints.
+            </Text>
+          ) : (
+            <VStack gap={2} hAlign="stretch">
+              {complaintGroups.map((g) => (
+                <BarRow key={g.name} label={g.name} count={g.count} max={complaintGroups[0].count} />
               ))}
             </VStack>
           )}

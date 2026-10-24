@@ -91,11 +91,14 @@ export async function sendBackAction(reviewId: string): Promise<ActionResult> {
   }
 }
 
-export async function approveAndPostAction(reviewId: string): Promise<ActionResult> {
+export async function approveAndPostAction(
+  reviewId: string,
+  override?: { reason: string; note?: string },
+): Promise<ActionResult> {
   try {
     const session = await requireSession();
     if (session.user.role !== "MANAGER") throw new Error("Only a manager can approve replies.");
-    await approveAndPost(reviewId, session.user.id);
+    await approveAndPost(reviewId, session.user.id, override);
     revalidatePath(`/reviews/${reviewId}`);
     revalidatePath("/dashboard");
     revalidatePath("/reports");

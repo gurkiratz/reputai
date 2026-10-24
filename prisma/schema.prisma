@@ -97,6 +97,7 @@ model User {
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   draftedReplies  Reply[]      @relation("DraftedBy")
   approvedReplies Reply[]      @relation("ApprovedBy")
+  overrides       ComplianceOverride[]
 
   @@index([organizationId])
 }
@@ -168,6 +169,7 @@ model Reply {
   approvedBy User?  @relation("ApprovedBy", fields: [approvedById], references: [id])
 
   complianceFlags ComplianceFlag[]
+  overrides       ComplianceOverride[]
 
   @@index([reviewId])
 }
@@ -181,6 +183,22 @@ model ComplianceFlag {
   createdAt DateTime           @default(now())
 
   reply Reply @relation(fields: [replyId], references: [id], onDelete: Cascade)
+
+  @@index([replyId])
+}
+
+// Audit log: a manager approved a reply that still had WARN flags (Stakeholder Review 2, D5).
+model ComplianceOverride {
+  id        String   @id @default(cuid())
+  replyId   String
+  managerId String
+  reason    String
+  note      String?
+  rules     String[]
+  createdAt DateTime @default(now())
+
+  reply   Reply @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  manager User  @relation(fields: [managerId], references: [id])
 
   @@index([replyId])
 }

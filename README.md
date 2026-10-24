@@ -1,4 +1,4 @@
-# ReputAI — CPAN 324 Phase I
+# ReputAI — CPAN 324 Phase II
 
 ReputAI is an AI review operations platform for multi-location dental groups (Group 5). It collects Google reviews for all locations in one inbox and sorts them by priority. It drafts on-brand replies with AI and checks each draft for unsafe content. A manager approves every reply before it posts.
 
@@ -14,7 +14,10 @@ Phase I continues from the CPAN 314 prototype. It adds real Google Business Prof
 | Token storage | Access and refresh tokens are encrypted with AES-256-GCM (`TOKEN_ENCRYPTION_KEY`) |
 | AI pipeline | LangGraph graph: classify → draft → compliance → revise (max 2) |
 | Revise limit | A draft that fails after 2 revisions gets a `max_revisions_reached` BLOCK flag and cannot be posted |
-| Planned for Phase II | Scheduled sync and SLA reminders, complaint clustering, insights dashboard, WARN override with audit log |
+| WARN override (Phase II) | A manager picks a reason from a list to approve a reply with WARN flags. Each override is saved in `ComplianceOverride`. BLOCK replies can never be approved |
+| Repeated complaints (Phase II) | Reports page groups negative reviews by topic and location, with plain names such as "Wait time at Main Street" |
+| Tests (Phase II) | Vitest unit and integration tests in `tests/`. GitHub Actions CI runs them |
+| Planned next | Scheduled sync and SLA reminders, staging site, insights dashboard |
 
 ### Main user flow
 
@@ -23,6 +26,12 @@ Phase I continues from the CPAN 314 prototype. It adds real Google Business Prof
 3. Read the compliance flags. Edit the reply if needed. Click **Submit for approval**.
 4. Sign in as the manager. Approve the reply. The app posts it to Google (or to the mock provider).
 5. Open **Reports** to see response time and sentiment for each location.
+
+## Tests
+
+```bash
+npm test
+```
 
 ## Setup
 
