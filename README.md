@@ -6,15 +6,15 @@ Phase I continues from the CPAN 314 prototype. It adds real Google Business Prof
 
 ## Current State (Phase I)
 
-| Area | Status |
-| --- | --- |
-| Core loop: sync → triage → AI draft → compliance check → approval → post → reports | Works end to end |
-| Review source | `REVIEW_PROVIDER=google` (real Google Business Profile) or `mock` (sample dental reviews, the demo fallback) |
-| Google OAuth connect flow | Settings → Google. Managers connect a Google account and link each location to a Business Profile location |
-| Token storage | Access and refresh tokens are encrypted with AES-256-GCM (`TOKEN_ENCRYPTION_KEY`) |
-| AI pipeline | LangGraph graph: classify → draft → compliance → revise (max 2) |
-| Revise limit | A draft that fails after 2 revisions gets a `max_revisions_reached` BLOCK flag and cannot be posted |
-| Planned for Phase II | Scheduled sync and SLA reminders, complaint clustering, insights dashboard, WARN override with audit log |
+| Area                                                                               | Status                                                                                                       |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Core loop: sync → triage → AI draft → compliance check → approval → post → reports | Works end to end                                                                                             |
+| Review source                                                                      | `REVIEW_PROVIDER=google` (real Google Business Profile) or `mock` (sample dental reviews, the demo fallback) |
+| Google OAuth connect flow                                                          | Settings → Google. Managers connect a Google account and link each location to a Business Profile location   |
+| Token storage                                                                      | Access and refresh tokens are encrypted with AES-256-GCM (`TOKEN_ENCRYPTION_KEY`)                            |
+| AI pipeline                                                                        | LangGraph graph: classify → draft → compliance → revise (max 2)                                              |
+| Revise limit                                                                       | A draft that fails after 2 revisions gets a `max_revisions_reached` BLOCK flag and cannot be posted          |
+| Planned for Phase II                                                               | Scheduled sync and SLA reminders, complaint clustering, insights dashboard, WARN override with audit log     |
 
 ### Main user flow
 
@@ -41,15 +41,15 @@ Demo logins (after seeding): `agent@brightsmile.example` and `manager@brightsmil
 
 ### Environment variables
 
-| Variable | Purpose |
-| --- | --- |
-| `DATABASE_URL` | PostgreSQL connection string |
-| `AUTH_SECRET` | Auth.js secret (`npx auth secret`) |
-| `GITHUB_MODELS_TOKEN`, `GITHUB_MODELS_BASE_URL`, `GITHUB_MODELS_MODEL` | AI model access |
-| `REVIEW_PROVIDER` | `mock` or `google` |
-| `APP_URL` | Public URL of the app. The OAuth redirect is `<APP_URL>/api/google/callback` |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth client (type "Web application") |
-| `TOKEN_ENCRYPTION_KEY` | 32-byte key, base64 (`openssl rand -base64 32`). Keep it in `.env` or Vercel secrets only |
+| Variable                                                               | Purpose                                                                                   |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                         | PostgreSQL connection string                                                              |
+| `AUTH_SECRET`                                                          | Auth.js secret (`npx auth secret`)                                                        |
+| `GITHUB_MODELS_TOKEN`, `GITHUB_MODELS_BASE_URL`, `GITHUB_MODELS_MODEL` | AI model access                                                                           |
+| `REVIEW_PROVIDER`                                                      | `mock` or `google`                                                                        |
+| `APP_URL`                                                              | Public URL of the app. The OAuth redirect is `<APP_URL>/api/google/callback`              |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`                             | Google OAuth client (type "Web application")                                              |
+| `TOKEN_ENCRYPTION_KEY`                                                 | 32-byte key, base64 (`openssl rand -base64 32`). Keep it in `.env` or Vercel secrets only |
 
 ### Use real Google reviews
 
@@ -101,11 +101,27 @@ npx tsx --env-file=.env scripts/smoke-ai.ts
 npx tsx --env-file=.env scripts/smoke-flow.ts
 ```
 
+Use Node.js 22.23.4 for the test setup.
+
+```bash
+npm ci
+npm test
+npm run test:coverage
+```
+
+The tests cover the compliance rules and reply pipeline. Pipeline tests use
+fake AI responses, so they do not need an API key or database.
+
+Coverage currently measures `src/lib/compliance.ts` only.
+
+- [QA test plan](docs/qa/TEST_PLAN.md)
+- [QA progress notes](docs/qa/PROGRESS_NOTES.md)
+
 ## Team (Group 5)
 
-| Member | Role |
-| --- | --- |
-| Gurkirat Singh | Project Lead and AI Engineer |
-| Lester Leonida | Backend and Integrations Developer |
-| Yathuraakan Mathivathanan | Frontend and UX Developer |
-| Celine Parmar | QA, Security and DevOps Engineer |
+| Member                    | Role                               |
+| ------------------------- | ---------------------------------- |
+| Gurkirat Singh            | Project Lead and AI Engineer       |
+| Lester Leonida            | Backend and Integrations Developer |
+| Yathuraakan Mathivathanan | Frontend and UX Developer          |
+| Celine Parmar             | QA, Security and DevOps Engineer   |

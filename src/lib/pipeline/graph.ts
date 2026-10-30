@@ -40,7 +40,12 @@ type State = typeof PipelineState.State;
 
 // Findings from the deterministic rules send the draft back for revision.
 // Model-only tone notes stay as WARN flags for the human reviewer.
-const RULE_KEYS = new Set(["patient_health_detail", "liability_admission", "unkeepable_promise", "off_brand_topic"]);
+const RULE_KEYS = new Set([
+  "patient_health_detail",
+  "liability_admission",
+  "unkeepable_promise",
+  "off_brand_topic",
+]);
 
 function needsRevision(findings: ComplianceFinding[]) {
   return findings.some((f) => RULE_KEYS.has(f.rule));
@@ -48,7 +53,10 @@ function needsRevision(findings: ComplianceFinding[]) {
 
 async function classify(state: State): Promise<Partial<State>> {
   if (state.analysis) return {};
-  const analysis = await analyzeReview({ reviewText: state.reviewText, rating: state.rating });
+  const analysis = await analyzeReview({
+    reviewText: state.reviewText,
+    rating: state.rating,
+  });
   return { analysis };
 }
 
@@ -64,7 +72,9 @@ async function draft(state: State): Promise<Partial<State>> {
 }
 
 async function compliance(state: State): Promise<Partial<State>> {
-  return { findings: await checkCompliance(state.draft!.body, state.brandVoice) };
+  return {
+    findings: await checkCompliance(state.draft!.body, state.brandVoice),
+  };
 }
 
 async function revise(state: State): Promise<Partial<State>> {
@@ -95,15 +105,16 @@ function afterCompliance(state: State) {
   return state.revisionCount < MAX_REVISIONS ? "revise" : "block";
 }
 
+// "draft" is already a state field, so the node needs a different name
 const replyGraph = new StateGraph(PipelineState)
   .addNode("classify", classify)
-  .addNode("draft", draft)
+  .addNode("generateDraft", draft)
   .addNode("compliance", compliance)
   .addNode("revise", revise)
   .addNode("blockMaxRevisions", blockMaxRevisions)
   .addEdge(START, "classify")
-  .addEdge("classify", "draft")
-  .addEdge("draft", "compliance")
+  .addEdge("classify", "generateDraft")
+  .addEdge("generateDraft", "compliance")
   .addConditionalEdges("compliance", afterCompliance, {
     pass: END,
     revise: "revise",
@@ -120,12 +131,21 @@ const triageGraph = new StateGraph(PipelineState)
   .compile();
 
 /** Rule checks plus the model-based tone check (skipped if the model call fails). */
-export async function checkCompliance(body: string, brandVoice: BrandVoice): Promise<ComplianceFinding[]> {
+export async function checkCompliance(
+  body: string,
+  brandVoice: BrandVoice,
+): Promise<ComplianceFinding[]> {
   const ruleFindings = runComplianceRules(body, brandVoice);
   try {
-    return [...ruleFindings, ...(await aiComplianceCheck({ replyBody: body, brandVoice }))];
+    return [
+      ...ruleFindings,
+      ...(await aiComplianceCheck({ replyBody: body, brandVoice })),
+    ];
   } catch (err) {
-    console.error("AI compliance check failed, continuing with rule-based results only:", err);
+    console.error(
+      "AI compliance check failed, continuing with rule-based results only:",
+      err,
+    );
     return ruleFindings;
   }
 }
@@ -140,7 +160,10 @@ const emptyState = {
 };
 
 /** Classify node only — used by review sync. */
-export async function runTriage(params: { reviewText: string; rating: number }): Promise<ReviewAnalysis> {
+export async function runTriage(params: {
+  reviewText: string;
+  rating: number;
+}): Promise<ReviewAnalysis> {
   const result = await triageGraph.invoke({ ...emptyState, ...params });
   return result.analysis!;
 }
