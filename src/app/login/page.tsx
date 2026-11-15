@@ -25,7 +25,7 @@ export default async function LoginPage({
         <Card padding={8} width="100%">
           <VStack gap={5} hAlign="stretch">
             <VStack gap={1} hAlign="start">
-              <Heading level={1}>Review Ops Platform</Heading>
+              <Heading level={1}>ReputAI</Heading>
               <Text type="supporting" size="sm">
                 Sign in to manage reviews for your dental group.
               </Text>

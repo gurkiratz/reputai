@@ -1,0 +1,18 @@
+name: Scheduled jobs
+# Calls the protected job routes on the production site every 15 minutes:
+# review sync (FR2) and the SLA check (FR13, at least hourly).
+# The SLA check never alerts the same review twice, so running it often is safe.
+# Needs the repository secrets APP_URL and CRON_SECRET.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Review sync
+        run: curl -fsS -X POST -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.APP_URL }}/api/jobs/sync"
+      - name: SLA check
+        run: curl -fsS -X POST -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.APP_URL }}/api/jobs/sla"

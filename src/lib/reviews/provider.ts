@@ -1,5 +1,4 @@
-import fs from "node:fs";
-import path from "node:path";
+import fixtures from "../../../prisma/fixtures/reviews.json";
 import { getAccessToken } from "@/lib/google/oauth";
 import { listReviews, updateReply, STAR_TO_NUMBER } from "@/lib/google/client";
 
@@ -34,13 +33,6 @@ export interface ReviewProvider {
   }): Promise<{ posted: boolean; postedAt: Date }>;
 }
 
-const FIXTURE_PATH = path.join(
-  process.cwd(),
-  "prisma",
-  "fixtures",
-  "reviews.json",
-);
-
 type FixtureFile = Record<
   string,
   Array<{
@@ -54,16 +46,23 @@ type FixtureFile = Record<
 
 export class MockGoogleBusinessProfileProvider implements ReviewProvider {
   async fetchReviews(location: ProviderLocation): Promise<RawReview[]> {
-    const raw = fs.readFileSync(FIXTURE_PATH, "utf-8");
-    const fixtures = JSON.parse(raw) as FixtureFile;
-    const forLocation = fixtures[location.name] ?? [];
+    const all = fixtures as FixtureFile;
+    const forLocation = all[location.name] ?? [];
+
+    // The sample dates are moved into the last 4 days (newest = 1 hour ago),
+    // so the SLA due times are realistic in a demo: some reviews are overdue
+    // and some are not.
+    const times = Object.values(all).flat().map((r) => new Date(r.reviewedAt).getTime());
+    const newest = Math.max(...times);
+    const scale = (4 * 24 * 3600_000) / Math.max(newest - Math.min(...times), 1);
+    const toDemoTime = (t: number) => Date.now() - 3600_000 - (newest - t) * scale;
 
     return forLocation.map((r) => ({
       externalId: r.externalId,
       authorName: r.authorName,
       rating: r.rating,
       text: r.text,
-      reviewedAt: new Date(r.reviewedAt),
+      reviewedAt: new Date(toDemoTime(new Date(r.reviewedAt).getTime())),
     }));
   }
 

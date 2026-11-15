@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/auth";
 import { completeConnection } from "@/lib/google/oauth";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   const back = (query: string) => {
@@ -21,6 +22,7 @@ export async function GET(req: NextRequest) {
 
   try {
     await completeConnection({ code, organizationId: session.user.organizationId, userId: session.user.id });
+    await logAudit({ organizationId: session.user.organizationId, actorId: session.user.id, action: "GOOGLE_CONNECTED" });
     return back("connected=1");
   } catch (err) {
     console.error("Google connection failed:", err);

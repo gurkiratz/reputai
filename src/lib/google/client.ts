@@ -1,3 +1,5 @@
+import { withRetry } from "@/lib/retry";
+
 // Thin wrappers over the Google Business Profile REST APIs used in Phase I.
 const REVIEWS_BASE = "https://mybusiness.googleapis.com/v4";
 const INFO_BASE = "https://mybusinessbusinessinformation.googleapis.com/v1";
@@ -19,7 +21,12 @@ export const STAR_TO_NUMBER: Record<GbpReview["starRating"], number> = {
   STAR_RATING_UNSPECIFIED: 3,
 };
 
+/** Each call retries up to 3 times (reliability NFR). */
 async function gbpFetch<T>(token: string, url: string, init: RequestInit = {}): Promise<T> {
+  return withRetry(() => gbpFetchOnce<T>(token, url, init));
+}
+
+async function gbpFetchOnce<T>(token: string, url: string, init: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init.headers },

@@ -15,6 +15,8 @@ export default async function TemplatesPage() {
     orderBy: { title: "asc" },
   });
 
+  const isManager = session!.user.role === "MANAGER";
+
   return (
     <VStack gap={6} hAlign="stretch">
       <VStack gap={0.5}>
@@ -24,7 +26,11 @@ export default async function TemplatesPage() {
         </Text>
       </VStack>
 
-      <TemplateForm />
+      {isManager ? (
+        <TemplateForm />
+      ) : (
+        <Text type="supporting" size="sm">Only a manager can add or delete templates.</Text>
+      )}
 
       {templates.length === 0 ? (
         <EmptyState title="No templates yet" description="Add one above to get started." />
@@ -36,7 +42,7 @@ export default async function TemplatesPage() {
               label={t.title}
               description={t.body}
               endContent={
-                <form action={deleteTemplateAction.bind(null, t.id)}>
+                isManager && <form action={deleteTemplateAction.bind(null, t.id)}>
                   <Button type="submit" label="Delete" variant="ghost" size="sm" />
                 </form>
               }

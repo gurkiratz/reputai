@@ -3,7 +3,7 @@ import "./globals.css";
 import { AppTheme } from "@/components/AppTheme";
 
 export const metadata: Metadata = {
-  title: "Review Ops Platform",
+  title: "ReputAI",
   description: "AI review operations platform for multi-location dental groups.",
 };
 

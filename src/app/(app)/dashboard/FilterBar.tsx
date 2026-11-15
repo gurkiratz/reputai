@@ -20,6 +20,11 @@ const SENTIMENT_OPTIONS = [
   { value: "NEGATIVE", label: "Negative" },
 ];
 
+const DUE_OPTIONS = [
+  { value: "", label: "All due times" },
+  { value: "1", label: "Overdue only" },
+];
+
 export function FilterBar({ locations }: { locations: { id: string; name: string }[] }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -58,6 +63,14 @@ export function FilterBar({ locations }: { locations: { id: string; name: string
         options={SENTIMENT_OPTIONS}
         value={searchParams.get("sentiment") ?? ""}
         onChange={(value) => setParam("sentiment", value)}
+        size="sm"
+      />
+      <Selector
+        label="Due time"
+        isLabelHidden
+        options={DUE_OPTIONS}
+        value={searchParams.get("overdue") ?? ""}
+        onChange={(value) => setParam("overdue", value)}
         size="sm"
       />
     </HStack>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ComplianceFlag, ComplianceSeverity } from "@prisma/client";
 import { VStack } from "@astryxdesign/core/VStack";
@@ -52,13 +52,6 @@ export function DraftPanel({
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
 
-  // `latestReply` is a server-provided prop that changes after router.refresh()
-  // (e.g. right after generating a draft or applying a template) — resync the
-  // local textarea value whenever the underlying reply changes, since useState's
-  // initializer only runs once and won't pick up the new content on its own.
-  useEffect(() => {
-    setBody(latestReply?.body ?? "");
-  }, [latestReply?.id, latestReply?.body]);
 
   const blockFlags = (latestReply?.complianceFlags ?? []).filter(
     (f) => f.severity === ("BLOCK" as ComplianceSeverity),

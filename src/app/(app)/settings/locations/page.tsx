@@ -37,7 +37,7 @@ export default async function LocationsPage() {
         ))}
       </List>
 
-      <AddLocationForm />
+      {session!.user.role === "MANAGER" && <AddLocationForm />}
     </VStack>
   );
 }

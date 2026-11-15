@@ -7,7 +7,8 @@ import { Heading, Text } from "@astryxdesign/core/Text";
 import { List, ListItem } from "@astryxdesign/core/List";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Badge } from "@astryxdesign/core/Badge";
-import { StatusBadge, SentimentBadge, EscalationBadge, Stars } from "@/components/badges";
+import { StatusBadge, SentimentBadge, EscalationBadge, PriorityBadge, Stars } from "@/components/badges";
+import { Button } from "@astryxdesign/core/Button";
 import { timeAgo, slaLabel } from "@/lib/format";
 import { FilterBar } from "./FilterBar";
 import { SyncButton } from "./SyncButton";
@@ -15,7 +16,7 @@ import { SyncButton } from "./SyncButton";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ location?: string; status?: string; sentiment?: string }>;
+  searchParams: Promise<{ location?: string; status?: string; sentiment?: string; overdue?: string }>;
 }) {
   const session = await auth();
   const params = await searchParams;
@@ -33,6 +34,7 @@ export default async function DashboardPage({
     ...(params.location ? { locationId: params.location } : {}),
     ...(params.status ? { status: params.status as ReviewStatus } : {}),
     ...(params.sentiment ? { sentiment: params.sentiment as Sentiment } : {}),
+    ...(params.overdue ? { slaDueAt: { lt: new Date() }, NOT: { status: "POSTED" } } : {}),
   };
 
   const reviews = await prisma.review.findMany({
@@ -43,6 +45,10 @@ export default async function DashboardPage({
   });
 
   const openCount = reviews.filter((r) => r.status !== "POSTED").length;
+  const overdueCount = await prisma.review.count({
+    where: { location: { organizationId }, status: { not: "POSTED" }, slaDueAt: { lt: new Date() } },
+  });
+  const isManager = session!.user.role === "MANAGER";
 
   return (
     <VStack gap={5} hAlign="stretch">
@@ -50,10 +56,21 @@ export default async function DashboardPage({
         <VStack gap={0.5}>
           <Heading level={1}>Unified inbox</Heading>
           <Text type="supporting" size="sm">
-            {reviews.length} review{reviews.length === 1 ? "" : "s"} shown · {openCount} open
+            {reviews.length} review{reviews.length === 1 ? "" : "s"} shown · {openCount} open ·{" "}
+            {overdueCount} overdue in total
           </Text>
         </VStack>
-        <SyncButton />
+        <HStack gap={2}>
+          {isManager && (
+            <Button
+              href="/api/export/flagged"
+              label="Export flagged (CSV)"
+              variant="secondary"
+              size="sm"
+            />
+          )}
+          <SyncButton />
+        </HStack>
       </HStack>
 
       <FilterBar locations={locations} />
@@ -91,7 +108,10 @@ export default async function DashboardPage({
                       <StatusBadge status={review.status} />
                       <SentimentBadge sentiment={review.sentiment} />
                     </HStack>
-                    <EscalationBadge level={review.escalationLevel} />
+                    <HStack gap={1.5}>
+                      {review.status !== "POSTED" && <PriorityBadge score={review.priorityScore} />}
+                      <EscalationBadge level={review.escalationLevel} />
+                    </HStack>
                     {sla && review.status !== "POSTED" && (
                       sla.overdue ? (
                         <Badge variant="error" label={sla.label} />

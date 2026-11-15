@@ -108,7 +108,9 @@ export default async function ReviewDetailPage({
         )}
       </VStack>
 
+      {/* The key resets the panel state when the server sends a new or edited reply. */}
       <DraftPanel
+        key={latestReply ? `${latestReply.id}:${latestReply.body}` : "none"}
         reviewId={review.id}
         status={review.status}
         latestReply={latestReply}

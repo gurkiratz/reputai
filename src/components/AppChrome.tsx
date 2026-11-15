@@ -10,12 +10,14 @@ import { HStack } from "@astryxdesign/core/HStack";
 import { Text } from "@astryxdesign/core/Text";
 import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@astryxdesign/core/Icon";
-import { Inbox, BarChart3, Megaphone, FileText, MapPin, Stethoscope, Link2 } from "lucide-react";
+import { Badge } from "@astryxdesign/core/Badge";
+import { Inbox, BarChart3, Megaphone, FileText, MapPin, Stethoscope, Link2, Bell, ScrollText } from "lucide-react";
 import { signOutAction } from "@/app/(app)/actions";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Inbox", icon: Inbox },
-  { href: "/reports", label: "Reports", icon: BarChart3 },
+  { href: "/alerts", label: "Alerts", icon: Bell },
+  { href: "/reports", label: "Insights", icon: BarChart3 },
 ];
 
 const SETTINGS_ITEMS = [
@@ -23,15 +25,18 @@ const SETTINGS_ITEMS = [
   { href: "/settings/templates", label: "Templates", icon: FileText },
   { href: "/settings/locations", label: "Locations", icon: MapPin },
   { href: "/settings/google", label: "Google", icon: Link2 },
+  { href: "/settings/audit", label: "Audit log", icon: ScrollText, managerOnly: true },
 ];
 
 export function AppChrome({
   userName,
   userRole,
+  unreadAlerts,
   children,
 }: {
   userName: string;
   userRole: string;
+  unreadAlerts: number;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -44,7 +49,7 @@ export function AppChrome({
           label="Main navigation"
           heading={
             <TopNavHeading
-              heading="Review Ops Platform"
+              heading="ReputAI"
               logo={<NavIcon icon={<Icon icon={Stethoscope} size="sm" />} />}
             />
           }
@@ -71,11 +76,16 @@ export function AppChrome({
                 label={item.label}
                 icon={item.icon}
                 isSelected={pathname === item.href}
+                endContent={
+                  item.href === "/alerts" && unreadAlerts > 0 ? (
+                    <Badge variant="error" label={String(unreadAlerts)} />
+                  ) : undefined
+                }
               />
             ))}
           </SideNavSection>
           <SideNavSection title="Settings">
-            {SETTINGS_ITEMS.map((item) => (
+            {SETTINGS_ITEMS.filter((item) => !item.managerOnly || userRole === "MANAGER").map((item) => (
               <SideNavItem
                 key={item.href}
                 as={NextLink}

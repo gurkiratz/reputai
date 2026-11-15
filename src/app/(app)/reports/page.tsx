@@ -1,4 +1,5 @@
 import { groupComplaints } from "@/lib/complaints";
+import { onTimeRate, overdueCount, weeklySentiment, type InsightReview } from "@/lib/insights";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { VStack } from "@astryxdesign/core/VStack";
@@ -51,7 +52,24 @@ interface LocationRow extends Record<string, unknown> {
   total: number;
   avgRating: string;
   percentAnswered: string;
+  avgResponse: string;
+  overdue: number;
   negative: number;
+}
+
+interface WeekTableRow extends Record<string, unknown> {
+  week: string;
+  positive: number;
+  neutral: number;
+  negative: number;
+}
+
+function avgHours(list: { reviewedAt: Date; replies: { postedAt: Date | null }[] }[]): string {
+  const times = list
+    .map((r) => (r.replies[0]?.postedAt ? r.replies[0].postedAt.getTime() - r.reviewedAt.getTime() : null))
+    .filter((v): v is number => v !== null);
+  if (times.length === 0) return "—";
+  return `${(times.reduce((a, b) => a + b, 0) / times.length / 3600_000).toFixed(1)}h`;
 }
 
 export default async function ReportsPage() {
@@ -80,6 +98,18 @@ export default async function ReportsPage() {
     responseTimesMs.length === 0
       ? null
       : responseTimesMs.reduce((a, b) => a + b, 0) / responseTimesMs.length / (1000 * 60 * 60);
+
+  const insightRows: InsightReview[] = reviews.map((r) => ({
+    reviewedAt: r.reviewedAt,
+    sentiment: r.sentiment,
+    status: r.status,
+    slaDueAt: r.slaDueAt,
+    postedAt: r.replies[0]?.postedAt ?? null,
+  }));
+  const onTime = onTimeRate(insightRows);
+  const overdueNow = overdueCount(insightRows);
+  const openEscalations = reviews.filter((r) => r.status !== "POSTED" && r.escalationLevel !== "NORMAL").length;
+  const trend: WeekTableRow[] = weeklySentiment(insightRows);
 
   const sentimentCounts = { POSITIVE: 0, NEUTRAL: 0, NEGATIVE: 0, UNTRIAGED: 0 };
   for (const r of reviews) {
@@ -116,6 +146,8 @@ export default async function ReportsPage() {
         locReviews.length === 0
           ? "0%"
           : `${Math.round((locPosted.length / locReviews.length) * 100)}%`,
+      avgResponse: avgHours(locPosted),
+      overdue: overdueCount(insightRows.filter((_, i) => reviews[i].locationId === loc.id)),
       negative,
     };
   });
@@ -129,9 +161,9 @@ export default async function ReportsPage() {
   return (
     <VStack gap={8} hAlign="stretch">
       <VStack gap={0.5}>
-        <Heading level={1}>Reports</Heading>
+        <Heading level={1}>Insights</Heading>
         <Text type="supporting" size="sm">
-          Response time, coverage, sentiment, and topics across all locations.
+          Response time, reply due times, sentiment trend, topics and repeated complaints across all locations.
         </Text>
       </VStack>
 
@@ -147,7 +179,32 @@ export default async function ReportsPage() {
           value={avgResponseHours === null ? "—" : `${avgResponseHours.toFixed(1)}h`}
         />
         <StatTile label="Negative reviews" value={String(sentimentCounts.NEGATIVE)} />
+        <StatTile label="Overdue now" value={String(overdueNow)} sub="Open reviews past the due time" />
+        <StatTile
+          label="Replied on time"
+          value={onTime === null ? "—" : `${onTime}%`}
+          sub="Posted before the due time"
+        />
+        <StatTile label="Open escalations" value={String(openEscalations)} sub="Manager, legal, privacy or fake" />
       </Grid>
+
+      <Card>
+        <VStack gap={4} hAlign="stretch">
+          <Text type="body" weight="semibold" size="sm">
+            Sentiment trend (last 6 weeks)
+          </Text>
+          <Table
+            data={trend}
+            idKey="week"
+            columns={[
+              { key: "week", header: "Week", width: proportional(2) },
+              { key: "positive", header: "Positive", width: proportional(1) },
+              { key: "neutral", header: "Neutral", width: proportional(1) },
+              { key: "negative", header: "Negative", width: proportional(1) },
+            ]}
+          />
+        </VStack>
+      </Card>
 
       <Card>
         <VStack gap={4} hAlign="stretch">
@@ -215,6 +272,8 @@ export default async function ReportsPage() {
               { key: "total", header: "Reviews", width: proportional(1) },
               { key: "avgRating", header: "Avg rating", width: proportional(1) },
               { key: "percentAnswered", header: "% answered", width: proportional(1) },
+              { key: "avgResponse", header: "Avg response", width: proportional(1) },
+              { key: "overdue", header: "Overdue", width: proportional(1) },
               { key: "negative", header: "Negative", width: proportional(1) },
             ]}
           />

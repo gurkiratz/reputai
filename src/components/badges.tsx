@@ -86,3 +86,10 @@ export function Stars({ rating }: { rating: number }) {
     </HStack>
   );
 }
+
+/** Priority badge from the deterministic priority score (T22). */
+export function PriorityBadge({ score }: { score: number }) {
+  if (score >= 80) return <Badge variant="error" label="High priority" />;
+  if (score >= 40) return <Badge variant="warning" label="Medium priority" />;
+  return null;
+}

@@ -26,6 +26,9 @@ export async function saveBrandVoiceAction(formData: FormData): Promise<ActionRe
   const signOff = String(formData.get("signOff") ?? "").trim() || null;
 
   if (!tone) return { ok: false, error: "Tone is required." };
+  if (tone.length > 300 || talkingPoints.length > 20 || topicsToAvoid.length > 20) {
+    return { ok: false, error: "The brand voice is too long." };
+  }
 
   await prisma.brandVoiceProfile.upsert({
     where: { organizationId: session.user.organizationId },

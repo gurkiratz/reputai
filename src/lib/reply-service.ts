@@ -4,6 +4,7 @@ import { type BrandVoice, type ReviewAnalysis } from "@/lib/ai";
 import { type ComplianceFinding } from "@/lib/compliance";
 import { checkCompliance, runReplyPipeline } from "@/lib/pipeline/graph";
 import { validateOverride, type OverrideInput } from "@/lib/override";
+import { logAudit } from "@/lib/audit";
 
 async function requireBrandVoice(organizationId: string): Promise<BrandVoice> {
   const profile = await prisma.brandVoiceProfile.findUnique({
@@ -94,10 +95,10 @@ export async function generateAIDraft(reviewId: string, userId: string) {
   return reply;
 }
 
-export async function applyTemplate(reviewId: string, templateId: string, userId: string) {
+export async function applyTemplate(reviewId: string, templateId: string, userId: string, organizationId: string) {
   const [review, template] = await Promise.all([
     prisma.review.findUniqueOrThrow({ where: { id: reviewId }, include: { location: true } }),
-    prisma.replyTemplate.findUniqueOrThrow({ where: { id: templateId } }),
+    prisma.replyTemplate.findFirstOrThrow({ where: { id: templateId, organizationId } }),
   ]);
   const brandVoice = await requireBrandVoice(review.location.organizationId);
 
@@ -176,6 +177,7 @@ export async function approveAndPost(reviewId: string, managerId: string, overri
     externalReviewId: review.externalId,
     body: reply.body,
   });
+  const organizationId = review.location.organizationId;
 
   const now = new Date();
   const updated = await prisma.reply.update({
@@ -199,6 +201,28 @@ export async function approveAndPost(reviewId: string, managerId: string, overri
     });
   }
   await prisma.review.update({ where: { id: reviewId }, data: { status: "POSTED" } });
+  // A posted review no longer needs its overdue alert.
+  await prisma.alert.updateMany({ where: { reviewId, readAt: null }, data: { readAt: now } });
+
+  await logAudit({ organizationId, actorId: managerId, action: "REPLY_APPROVED", targetType: "Reply", targetId: reply.id });
+  if (validOverride) {
+    await logAudit({
+      organizationId,
+      actorId: managerId,
+      action: "WARN_OVERRIDE",
+      targetType: "Reply",
+      targetId: reply.id,
+      details: { reason: validOverride.reason, rules: reply.complianceFlags.map((f) => f.rule) },
+    });
+  }
+  await logAudit({
+    organizationId,
+    actorId: managerId,
+    action: "REPLY_POSTED",
+    targetType: "Review",
+    targetId: reviewId,
+    details: { provider: process.env.REVIEW_PROVIDER === "google" ? "google" : "mock" },
+  });
 
   return updated;
 }

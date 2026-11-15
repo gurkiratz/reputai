@@ -1,7 +1,9 @@
 name: CI
 on: [push, pull_request]
+
 jobs:
   test:
+    name: Unit and integration tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -11,4 +13,46 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma generate
+      - run: npx tsc --noEmit
+      - run: npm run lint
       - run: npm test
+
+  e2e:
+    name: End-to-end tests (Playwright)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: reviewops
+          POSTGRES_PASSWORD: reviewops
+          POSTGRES_DB: reviewops
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U reviewops" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://reviewops:reviewops@localhost:5432/reviewops?schema=public
+      AUTH_SECRET: ci-only-auth-secret-not-used-anywhere-else
+      AUTH_TRUST_HOST: "true"
+      REVIEW_PROVIDER: mock
+      APP_URL: http://localhost:3000
+      # No AI key in CI. AI calls fail fast and the app falls back (untriaged reviews, rule-only checks).
+      GITHUB_MODELS_TOKEN: ci-no-key
+      GITHUB_MODELS_BASE_URL: http://127.0.0.1:9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma migrate deploy
+      - run: npx tsx prisma/seed.ts
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/

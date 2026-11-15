@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { disconnect } from "@/lib/google/oauth";
+import { logAudit } from "@/lib/audit";
 
 async function requireManager() {
   const session = await auth();
@@ -15,6 +16,7 @@ async function requireManager() {
 export async function disconnectGoogleAction() {
   const user = await requireManager();
   await disconnect(user.organizationId);
+  await logAudit({ organizationId: user.organizationId, actorId: user.id, action: "GOOGLE_DISCONNECTED" });
   revalidatePath("/settings/google");
 }
 

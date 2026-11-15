@@ -49,6 +49,8 @@ model Organization {
   brandVoiceProfile BrandVoiceProfile?
   replyTemplates    ReplyTemplate[]
   googleConnection  GoogleConnection?
+  auditLogs         AuditLog[]
+  alerts            Alert[]
 }
 
 // One Google Business Profile connection per organization (Phase I: real GBP sync).
@@ -145,6 +147,7 @@ model Review {
 
   location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
   replies  Reply[]
+  alerts   Alert[]
 
   @@unique([locationId, externalId])
   @@index([locationId])
@@ -201,4 +204,45 @@ model ComplianceOverride {
   manager User  @relation(fields: [managerId], references: [id])
 
   @@index([replyId])
+}
+
+// Audit log (FR17): Google connections, approvals, overrides, posts, sync errors, alerts, exports.
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  actorId        String? // null for scheduled jobs
+  action         String // e.g. "REPLY_POSTED", "SYNC_ERROR"
+  targetType     String?
+  targetId       String?
+  details        Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+}
+
+// In-app alert. One SLA_OVERDUE alert per review (FR13).
+model Alert {
+  id             String    @id @default(cuid())
+  organizationId String
+  reviewId       String
+  type           String // "SLA_OVERDUE"
+  message        String
+  emailedAt      DateTime?
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  review       Review       @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, type])
+  @@index([organizationId, readAt])
+}
+
+// Fixed-window rate limit counters (works on serverless, no Redis needed).
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
 }

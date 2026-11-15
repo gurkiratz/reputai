@@ -1,16 +1,31 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
 import { syncOrganization } from "@/lib/reviews/sync";
+import { requireUser, requireManager } from "@/lib/guard";
+import { enforceRateLimit, LIMITS } from "@/lib/rate-limit";
+import { logAudit } from "@/lib/audit";
+import { runSlaCheck } from "@/lib/jobs";
 
 export async function syncAllLocationsAction() {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated.");
+  const user = await requireUser();
+  await enforceRateLimit(`sync:${user.organizationId}`, LIMITS.sync);
+  try {
+    const results = await syncOrganization(user.organizationId);
+    revalidatePath("/dashboard");
+    return { totalCreated: results.reduce((sum, r) => sum + r.created, 0) };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await logAudit({ organizationId: user.organizationId, actorId: user.id, action: "SYNC_ERROR", details: { message, source: "manual" } });
+    throw err;
+  }
+}
 
-  const results = await syncOrganization(session.user.organizationId);
+/** Runs the SLA check now (the same job the scheduler calls). Used in the demo. */
+export async function runSlaCheckAction() {
+  await requireManager("Only a manager can run the SLA check.");
+  const result = await runSlaCheck();
   revalidatePath("/dashboard");
-
-  const totalCreated = results.reduce((sum, r) => sum + r.created, 0);
-  return { totalCreated };
+  revalidatePath("/alerts");
+  return result;
 }
