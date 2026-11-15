@@ -19,7 +19,7 @@ jobs:
 
   e2e:
     name: End-to-end tests (Playwright)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Playwright 1.56 supports up to Ubuntu 24.04
     services:
       postgres:
         image: postgres:16-alpine
